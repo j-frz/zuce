@@ -5,7 +5,8 @@
 		"target": "ESNext",
 		"outDir": "build",
 		"moduleDetection": "force",
-		"skipLibCheck": true
+		"skipLibCheck": true,
+		"declaration": true
 	},
 	"include": ["src"],
 	"exclude": ["node_modules", "build"]
