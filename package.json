@@ -4,10 +4,11 @@
 	"main": "build/index.js",
 	"type": "module",
 	"types": "build/index.d.ts",
-	"files": [
-		"build",
-		"README.md"
-	],
+	"files": ["build", "README.md"],
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/j-frz/zuce.git"
+	},
 	"scripts": {
 		"prepack": "npx tsc",
 		"test": "jest"
