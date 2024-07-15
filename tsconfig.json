@@ -1,12 +1,15 @@
 {
 	"compilerOptions": {
-		"lib": ["ESNext"],
-		"module": "NodeNext",
-		"target": "ESNext",
+		"lib": ["ES2020", "DOM", "DOM.Iterable"],
+		"module": "ES2020",
+		"target": "ES2020",
 		"outDir": "build",
 		"moduleDetection": "force",
 		"skipLibCheck": true,
-		"declaration": true
+		"declaration": true,
+		"esModuleInterop": true,
+		"moduleResolution": "node",
+		"strict": false
 	},
 	"include": ["src"],
 	"exclude": ["node_modules", "build"]
