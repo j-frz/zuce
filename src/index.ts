@@ -1,1 +1,1 @@
-export * from "./zuce.js";
+export * from "./zuce";

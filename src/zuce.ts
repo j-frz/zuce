@@ -348,7 +348,7 @@ export type Uncategorized = Extract<
 >;
 
 type Child<T extends TagName, StateType = null> =
-	| Zuce<T, TagName, StateType, Node>
+	| Hera<T, TagName, StateType, Node>
 	| string
 	| number;
 
@@ -366,20 +366,6 @@ document.adoptedStyleSheets.push(sheet);
 
 const db = new Map();
 const _DB = new Map();
-
-// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-type Children<StateType, NType extends Zuce<TagName, TagName, any, Node>> = Array<
-	| ((
-			source: StateType extends null
-				? NodeHook<HTMLSpanElement>
-				: StateHook<StateType, HTMLSpanElement>,
-	  ) => NType["_children"][number] | string | number | null | undefined)
-	| NType["_children"][number]
-	| string
-	| number
-	| null
-	| undefined
->;
 
 const getClassName = (styles: Partial<CSSStyleDeclaration>) => {
 	const key = JSON.stringify(styles);
@@ -409,9 +395,9 @@ type NodeAttributes = Partial<Record<string, string | number | object>>;
 
 type MapKey = "styles" | "events" | "attributes" | number;
 
-export class Zuce<
-	TagType extends TagName,
-	ChildType extends TagName,
+export class Hera<
+	TagType extends TagName = TagName,
+	ChildType extends TagName = TagName,
 	StateType = null,
 	NodeType extends Node = Node,
 > {
@@ -424,14 +410,14 @@ export class Zuce<
 				source: StateType extends null
 					? NodeHook<NodeType>
 					: StateHook<StateType, NodeType>,
-		  ) => Zuce<ChildType, TagName, StateType> | string | number | null | undefined)
-		| Zuce<ChildType, TagName, StateType>
+		  ) => Hera<ChildType, TagName, StateType> | string | number | null | undefined)
+		| Hera<ChildType, TagName, StateType>
 		| string
 		| number
 		| null
 		| undefined
 	>;
-	private S: S<StateType> | null;
+	private S: Zuce<StateType> | null;
 	// private s: s<StateType> | null;
 	private resizeObserver: ResizeObserver;
 
@@ -460,14 +446,14 @@ export class Zuce<
 
 	constructor(
 		tag: TagType,
-		s: S<StateType> | null,
+		s: Zuce<StateType> | null,
 		...children: Array<
 			| ((
 					source: StateType extends null
 						? NodeHook<NodeType>
 						: StateHook<StateType, NodeType>,
-			  ) => Zuce<ChildType, TagName, StateType> | string | number | null | undefined)
-			| Zuce<ChildType, TagName, StateType>
+			  ) => Hera<ChildType, TagName, StateType> | string | number | null | undefined)
+			| Hera<ChildType, TagName, StateType>
 			| string
 			| number
 			| null
@@ -479,6 +465,7 @@ export class Zuce<
 		this.tag = tag;
 		this.node = document.createElement(this.tag) as NodeType;
 
+		// TODO: HAVE TO UNSIBSCRIBE BUT WHEN???
 		/* this.s = */ s?.subscribe(() => this.update("StateFuture")) || null;
 		this.styleClass = null;
 
@@ -493,8 +480,6 @@ export class Zuce<
 	}
 
 	private update(stateKey: "StateFuture" | "NodeFuture") {
-		console.log("s", s);
-
 		for (const [key, value] of this[stateKey].entries()) {
 			if (this.isStylesUpdate(value, key)) {
 				this.styles(value);
@@ -515,7 +500,7 @@ export class Zuce<
 	): value is (source: {
 		n: NodeType;
 		s: StateType;
-	}) => Zuce<TagName, TagName, StateType, NodeType> | string | number | null | undefined {
+	}) => Hera<TagName, TagName, StateType, NodeType> | string | number | null | undefined {
 		return typeof key === "number";
 	}
 
@@ -578,11 +563,11 @@ export class Zuce<
 
 		if (this.S === null) {
 			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-			return fn(new NodeHook<NodeType>(this.node, typeCallback) as any);
+			return fn(new NodeHook<NodeType>(this._.node, typeCallback) as any);
 		}
 		return fn(
 			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-			new StateHook<StateType, NodeType>(this.node, this.S.value, typeCallback) as any,
+			new StateHook<StateType, NodeType>(this._.node, this.S.value, typeCallback) as any,
 		);
 	}
 
@@ -602,7 +587,7 @@ export class Zuce<
 						: StateHook<StateType, NodeType>,
 			  ) => NodeAttributes)
 			| NodeAttributes,
-	): Zuce<TagType, ChildType, StateType, NodeType> {
+	): Hera<TagType, ChildType, StateType, NodeType> {
 		const derivedAttributes = derive(() => {
 			if (attributes instanceof Function) {
 				return this.connectSocket(attributes, "attributes");
@@ -630,7 +615,7 @@ export class Zuce<
 						: StateHook<StateType, NodeType>,
 			  ) => NodeEvents)
 			| NodeEvents,
-	): Zuce<TagType, ChildType, StateType, NodeType> {
+	): Hera<TagType, ChildType, StateType, NodeType> {
 		const derivedEvents = derive(() => {
 			if (events instanceof Function) {
 				return this.connectSocket(events, "events");
@@ -674,7 +659,7 @@ export class Zuce<
 						: StateHook<StateType, NodeType>,
 			  ) => NodeCSSProperties)
 			| NodeCSSProperties,
-	): Zuce<TagType, ChildType, StateType, NodeType> {
+	): Hera<TagType, ChildType, StateType, NodeType> {
 		const derivedStyles = derive(() => {
 			if (styles instanceof Function) {
 				return this.connectSocket(styles, "styles");
@@ -707,7 +692,7 @@ export class Zuce<
 		subscription: (source: {
 			n: NodeType;
 			s: StateType;
-		}) => Zuce<ChildType, TagName, StateType, NodeType> | string | number | null | undefined,
+		}) => Hera<ChildType, TagName, StateType, NodeType> | string | number | null | undefined,
 	) {
 		const newNode = subscription({
 			s: this.S?.value ?? null,
@@ -734,7 +719,7 @@ export class Zuce<
 			} else {
 				this.node.append(document.createTextNode(String(newNode ?? "")));
 			}
-		} else if (newNode instanceof Zuce) {
+		} else if (newNode instanceof Hera) {
 			const target = newNode._.render();
 
 			if (this.node.childNodes[index]) {
@@ -782,7 +767,7 @@ export class Zuce<
 	}
 }
 
-export class S<StateType = null> {
+export class Zuce<StateType = null> {
 	private current: StateType;
 	subscribers: s<StateType>[];
 	constructor(first: StateType) {
@@ -819,165 +804,422 @@ export class S<StateType = null> {
 	}
 
 	a(
-		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-		...children: Children<StateType, A<any>>
-	): A<StateType> {
-		return new A<StateType>(this, ...(children as A<StateType>["_children"]));
+		...children: Array<
+			| ((
+					source: StateType extends null
+						? NodeHook<HTMLAnchorElement>
+						: StateHook<StateType, HTMLAnchorElement>,
+					// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+			  ) => Hera<PhrasingContent, TagName, any, any> | string | number | null | undefined)
+			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+			| Hera<PhrasingContent, TagName, any, any>
+			| string
+			| number
+			| null
+			| undefined
+		>
+	): Hera<"a", PhrasingContent, StateType, HTMLAnchorElement> {
+		return new Hera("a", this, ...(children as []));
 	}
 
 	button(
-		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-		...children: Children<StateType, BUTTON<any>>
-	): BUTTON<StateType> {
-		return new BUTTON<StateType>(this, ...(children as BUTTON<StateType>["_children"]));
+		...children: Array<
+			| ((
+					source: StateType extends null
+						? NodeHook<HTMLButtonElement>
+						: StateHook<StateType, HTMLButtonElement>,
+					// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+			  ) => Hera<PhrasingContent, TagName, any, any> | string | number | null | undefined)
+			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+			| Hera<PhrasingContent, TagName, any, any>
+			| string
+			| number
+			| null
+			| undefined
+		>
+	): Hera<"button", PhrasingContent, StateType, HTMLButtonElement> {
+		return new Hera("button", this, ...(children as []));
 	}
 
 	div(
-		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-		...children: Children<StateType, DIV<any>>
-	): DIV<StateType> {
-		return new DIV<StateType>(this, ...(children as DIV<StateType>["_children"]));
+		...children: Array<
+			| ((
+					source: StateType extends null
+						? NodeHook<HTMLDivElement>
+						: StateHook<StateType, HTMLDivElement>,
+					// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+			  ) => Hera<FlowContent, TagName, any, any> | string | number | null | undefined)
+			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+			| Hera<FlowContent, TagName, any, any>
+			| string
+			| number
+			| null
+			| undefined
+		>
+	): Hera<"div", FlowContent, StateType, HTMLDivElement> {
+		return new Hera("div", this, ...(children as []));
 	}
 
 	form(
-		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-		...children: Children<StateType, FORM<any>>
-	): FORM<StateType> {
-		return new FORM<StateType>(this, ...(children as FORM<StateType>["_children"]));
+		...children: Array<
+			| ((
+					source: StateType extends null
+						? NodeHook<HTMLFormElement>
+						: StateHook<StateType, HTMLFormElement>,
+					// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+			  ) => Hera<FlowContent, TagName, any, any> | string | number | null | undefined)
+			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+			| Hera<FlowContent, TagName, any, any>
+			| string
+			| number
+			| null
+			| undefined
+		>
+	): Hera<"form", FlowContent, StateType, HTMLFormElement> {
+		return new Hera("form", this, ...(children as []));
 	}
 
 	h1(
-		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-		...children: Children<StateType, H1<any>>
-	): H1<StateType> {
-		return new H1<StateType>(this, ...(children as H1<StateType>["_children"]));
+		...children: Array<
+			| ((
+					source: StateType extends null
+						? NodeHook<HTMLHeadingElement>
+						: StateHook<StateType, HTMLHeadingElement>,
+					// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+			  ) => Hera<TagName, TagName, any, any> | string | number | null | undefined)
+			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+			| Hera<TagName, TagName, any, any>
+			| string
+			| number
+			| null
+			| undefined
+		>
+	): Hera<"h1", "span", StateType, HTMLHeadingElement> {
+		return new Hera("h1", this, ...(children as []));
 	}
 
 	h2(
-		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-		...children: Children<StateType, H2<any>>
-	): H2<StateType> {
-		return new H2<StateType>(this, ...(children as H2<StateType>["_children"]));
+		...children: Array<
+			| ((
+					source: StateType extends null
+						? NodeHook<HTMLHeadingElement>
+						: StateHook<StateType, HTMLHeadingElement>,
+					// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+			  ) => Hera<"span", TagName, any, any> | string | number | null | undefined)
+			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+			| Hera<"span", TagName, any, any>
+			| string
+			| number
+			| null
+			| undefined
+		>
+	): Hera<"h2", "span", StateType, HTMLHeadingElement> {
+		return new Hera("h2", this, ...(children as []));
 	}
 
 	h3(
-		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-		...children: Children<StateType, H3<any>>
-	): H3<StateType> {
-		return new H3<StateType>(this, ...(children as H3<StateType>["_children"]));
+		...children: Array<
+			| ((
+					source: StateType extends null
+						? NodeHook<HTMLHeadingElement>
+						: StateHook<StateType, HTMLHeadingElement>,
+					// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+			  ) => Hera<"span", TagName, any, any> | string | number | null | undefined)
+			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+			| Hera<"span", TagName, any, any>
+			| string
+			| number
+			| null
+			| undefined
+		>
+	): Hera<"h3", "span", StateType, HTMLHeadingElement> {
+		return new Hera("h3", this, ...(children as []));
 	}
 
 	h4(
-		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-		...children: Children<StateType, H4<any>>
-	): H4<StateType> {
-		return new H4<StateType>(this, ...(children as H4<StateType>["_children"]));
+		...children: Array<
+			| ((
+					source: StateType extends null
+						? NodeHook<HTMLHeadingElement>
+						: StateHook<StateType, HTMLHeadingElement>,
+					// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+			  ) => Hera<"span", TagName, any, any> | string | number | null | undefined)
+			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+			| Hera<"span", TagName, any, any>
+			| string
+			| number
+			| null
+			| undefined
+		>
+	): Hera<"h4", "span", StateType, HTMLHeadingElement> {
+		return new Hera("h4", this, ...(children as []));
 	}
 
 	h5(
-		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-		...children: Children<StateType, H5<any>>
-	): H5<StateType> {
-		return new H5<StateType>(this, ...(children as H5<StateType>["_children"]));
+		...children: Array<
+			| ((
+					source: StateType extends null
+						? NodeHook<HTMLHeadingElement>
+						: StateHook<StateType, HTMLHeadingElement>,
+					// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+			  ) => Hera<"span", TagName, any, any> | string | number | null | undefined)
+			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+			| Hera<"span", TagName, any, any>
+			| string
+			| number
+			| null
+			| undefined
+		>
+	): Hera<"h5", "span", StateType, HTMLHeadingElement> {
+		return new Hera("h5", this, ...(children as []));
 	}
 
 	h6(
-		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-		...children: Children<StateType, H6<any>>
-	): H6<StateType> {
-		return new H6<StateType>(this, ...(children as H6<StateType>["_children"]));
+		...children: Array<
+			| ((
+					source: StateType extends null
+						? NodeHook<HTMLHeadingElement>
+						: StateHook<StateType, HTMLHeadingElement>,
+					// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+			  ) => Hera<"span", TagName, any, any> | string | number | null | undefined)
+			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+			| Hera<"span", TagName, any, any>
+			| string
+			| number
+			| null
+			| undefined
+		>
+	): Hera<"h6", "span", StateType, HTMLHeadingElement> {
+		return new Hera("h6", this, ...(children as []));
 	}
 
-	img(): IMG {
-		return new IMG();
+	img(): Hera<"img", "img", StateType, HTMLImageElement> {
+		return new Hera("img", this);
 	}
 
-	input(): INPUT {
-		return new INPUT();
+	input(): Hera<"input", "input", StateType, HTMLInputElement> {
+		return new Hera("input", this);
 	}
 
 	label(
-		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-		...children: Children<StateType, LABEL<any>>
-	): LABEL<StateType> {
-		return new LABEL<StateType>(this, ...(children as LABEL<StateType>["_children"]));
+		...children: Array<
+			| ((
+					source: StateType extends null
+						? NodeHook<HTMLLabelElement>
+						: StateHook<StateType, HTMLLabelElement>,
+			  ) => // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+					| Hera<"span" | "p" | "input" | "textarea", TagName, any, any>
+					| string
+					| number
+					| null
+					| undefined)
+			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+			| Hera<"span" | "p" | "input" | "textarea", TagName, any, any>
+			| string
+			| number
+			| null
+			| undefined
+		>
+	): Hera<"label", "span" | "p" | "input" | "textarea", StateType, HTMLLabelElement> {
+		return new Hera("label", this, ...(children as []));
 	}
 
 	nav(
-		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-		...children: Children<StateType, NAV<any>>
-	): NAV<StateType> {
-		return new NAV<StateType>(this, ...(children as NAV<StateType>["_children"]));
+		...children: Array<
+			| ((
+					source: StateType extends null
+						? NodeHook<HTMLElement>
+						: StateHook<StateType, HTMLElement>,
+					// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+			  ) => Hera<TagName, TagName, any, any> | string | number | null | undefined)
+			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+			| Hera<TagName, TagName, any, any>
+			| string
+			| number
+			| null
+			| undefined
+		>
+	): Hera<"nav", FlowContent, StateType, HTMLElement> {
+		return new Hera("nav", this, ...(children as []));
 	}
+
 	p(
-		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-		...children: Children<StateType, P<any>>
-	): P<StateType> {
-		return new P<StateType>(this, ...(children as P<StateType>["_children"]));
+		...children: Array<
+			| ((
+					source: StateType extends null
+						? NodeHook<HTMLParagraphElement>
+						: StateHook<StateType, HTMLParagraphElement>,
+					// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+			  ) => Hera<PhrasingContent, TagName, any, any> | string | number | null | undefined)
+			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+			| Hera<PhrasingContent, TagName, any, any>
+			| string
+			| number
+			| null
+			| undefined
+		>
+	): Hera<"p", PhrasingContent, StateType, HTMLParagraphElement> {
+		return new Hera("p", this, ...(children as []));
 	}
 
 	span(
-		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-		...children: Children<StateType, SPAN<any>>
-	): SPAN<StateType> {
-		return new SPAN<StateType>(this, ...(children as SPAN<StateType>["_children"]));
+		...children: Array<
+			| ((
+					source: StateType extends null
+						? NodeHook<HTMLSpanElement>
+						: StateHook<StateType, HTMLSpanElement>,
+					// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+			  ) => Hera<"span", TagName, any, any> | string | number | null | undefined)
+			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+			| Hera<"span", TagName, any, any>
+			| string
+			| number
+			| null
+			| undefined
+		>
+	): Hera<"span", "span", StateType, HTMLSpanElement> {
+		return new Hera("span", this, ...(children as []));
 	}
 
 	table(
-		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-		...children: Children<StateType, TABLE<any>>
-	): TABLE<StateType> {
-		return new TABLE<StateType>(this, ...(children as TABLE<StateType>["_children"]));
+		...children: Array<
+			| ((
+					source: StateType extends null
+						? NodeHook<HTMLTableElement>
+						: StateHook<StateType, HTMLTableElement>,
+					// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+			  ) => Hera<"span", TagName, any, any> | string | number | null | undefined)
+			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+			| Hera<"span", TagName, any, any>
+			| string
+			| number
+			| null
+			| undefined
+		>
+	): Hera<"table", "span", StateType, HTMLTableElement> {
+		return new Hera("table", this, ...(children as []));
 	}
 
 	thead(
-		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-		...children: Children<StateType, THEAD<any>>
-	): THEAD<StateType> {
-		return new THEAD<StateType>(this, ...(children as THEAD<StateType>["_children"]));
+		...children: Array<
+			| ((
+					source: StateType extends null
+						? NodeHook<HTMLTableSectionElement>
+						: StateHook<StateType, HTMLTableSectionElement>,
+					// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+			  ) => Hera<"tr", TagName, any, any> | string | number | null | undefined)
+			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+			| Hera<"tr", TagName, any, any>
+			| string
+			| number
+			| null
+			| undefined
+		>
+	): Hera<"thead", "tr", StateType, HTMLTableSectionElement> {
+		return new Hera("thead", this, ...(children as []));
 	}
 
 	tbody(
-		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-		...children: Children<StateType, TBODY<any>>
-	): TBODY<StateType> {
-		return new TBODY<StateType>(this, ...(children as TBODY<StateType>["_children"]));
+		...children: Array<
+			| ((
+					source: StateType extends null
+						? NodeHook<HTMLTableSectionElement>
+						: StateHook<StateType, HTMLTableSectionElement>,
+					// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+			  ) => Hera<"tr", TagName, any, any> | string | number | null | undefined)
+			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+			| Hera<"tr", TagName, any, any>
+			| string
+			| number
+			| null
+			| undefined
+		>
+	): Hera<"tbody", "tr", StateType, HTMLTableSectionElement> {
+		return new Hera("tbody", this, ...(children as []));
 	}
 
 	tfoot(
-		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-		...children: Children<StateType, TFOOT<any>>
-	): TFOOT<StateType> {
-		return new TFOOT<StateType>(this, ...(children as TFOOT<StateType>["_children"]));
+		...children: Array<
+			| ((
+					source: StateType extends null
+						? NodeHook<HTMLTableSectionElement>
+						: StateHook<StateType, HTMLTableSectionElement>,
+					// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+			  ) => Hera<"tr", TagName, any, any> | string | number | null | undefined)
+			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+			| Hera<"tr", TagName, any, any>
+			| string
+			| number
+			| null
+			| undefined
+		>
+	): Hera<"tfoot", "tr", StateType, HTMLTableSectionElement> {
+		return new Hera("tfoot", this, ...(children as []));
 	}
 
 	th(
-		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-		...children: Children<StateType, TH<any>>
-	): TH<StateType> {
-		return new TH<StateType>(this, ...(children as TH<StateType>["_children"]));
+		...children: Array<
+			| ((
+					source: StateType extends null
+						? NodeHook<HTMLTableCellElement>
+						: StateHook<StateType, HTMLTableCellElement>,
+					// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+			  ) => Hera<FlowContent, TagName, any, any> | string | number | null | undefined)
+			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+			| Hera<FlowContent, TagName, any, any>
+			| string
+			| number
+			| null
+			| undefined
+		>
+	): Hera<"th", FlowContent, StateType, HTMLTableCellElement> {
+		return new Hera("th", this, ...(children as []));
 	}
 
 	td(
-		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-		...children: Children<StateType, TD<any>>
-	): TD<StateType> {
-		return new TD<StateType>(this, ...(children as TD<StateType>["_children"]));
+		...children: Array<
+			| ((
+					source: StateType extends null
+						? NodeHook<HTMLTableCellElement>
+						: StateHook<StateType, HTMLTableCellElement>,
+					// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+			  ) => Hera<FlowContent, TagName, any, any> | string | number | null | undefined)
+			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+			| Hera<FlowContent, TagName, any, any>
+			| string
+			| number
+			| null
+			| undefined
+		>
+	): Hera<"td", FlowContent, StateType, HTMLTableCellElement> {
+		return new Hera("td", this, ...(children as []));
 	}
 
 	tr(
-		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-		...children: Children<StateType, TR<any>>
-	): TR<StateType> {
-		return new TR<StateType>(this, ...(children as TR<StateType>["_children"]));
+		...children: Array<
+			| ((
+					source: StateType extends null
+						? NodeHook<HTMLTableRowElement>
+						: StateHook<StateType, HTMLTableRowElement>,
+					// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+			  ) => Hera<TagName, TagName, any, any> | string | number | null | undefined)
+			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+			| Hera<TagName, TagName, any, any>
+			| string
+			| number
+			| null
+			| undefined
+		>
+	): Hera<"tr", "td" | "th", StateType, HTMLTableRowElement> {
+		return new Hera("tr", this, ...(children as []));
 	}
 }
 
 class s<T> {
 	private effect: (state: T) => void;
-	private source: S<T>;
+	private source: Zuce<T>;
 
-	constructor(source: S<T>, effect: (state: T) => void) {
+	constructor(source: Zuce<T>, effect: (state: T) => void) {
 		this.source = source;
 		this.effect = effect;
 	}
@@ -996,269 +1238,9 @@ class s<T> {
 	}
 }
 
-export const $ = <T>(current: T) => {
-	return new S(current);
+export const zuce = <T>(current: T) => {
+	return new Zuce(current);
 };
-
-export class A<StateType = unknown> extends Zuce<
-	"a",
-	PhrasingContent,
-	StateType,
-	HTMLAnchorElement
-> {
-	constructor(
-		s: S<StateType>,
-		...children: Zuce<"a", PhrasingContent, StateType, HTMLAnchorElement>["_children"]
-	) {
-		super("a", s, ...(children as []));
-	}
-}
-
-export class BUTTON<StateType = unknown> extends Zuce<
-	"button",
-	PhrasingContent,
-	StateType,
-	HTMLButtonElement
-> {
-	constructor(
-		s: S<StateType>,
-		...children: Zuce<"button", PhrasingContent, StateType, HTMLButtonElement>["_children"]
-	) {
-		super("button", s, ...(children as []));
-	}
-}
-
-export class DIV<StateType = unknown> extends Zuce<"div", FlowContent, StateType, HTMLDivElement> {
-	constructor(
-		s: S<StateType>,
-		...children: Zuce<"div", FlowContent, StateType, HTMLDivElement>["_children"]
-	) {
-		super("div", s, ...(children as []));
-	}
-}
-
-export class FORM<StateType = unknown> extends Zuce<
-	"form",
-	FlowContent,
-	StateType,
-	HTMLFormElement
-> {
-	constructor(
-		s: S<StateType>,
-		...children: Zuce<"form", FlowContent, StateType, HTMLFormElement>["_children"]
-	) {
-		super("form", s, ...(children as []));
-	}
-}
-
-export class H1<StateType = unknown> extends Zuce<"h1", "span", StateType, HTMLHeadingElement> {
-	constructor(
-		s: S<StateType>,
-		...children: Zuce<"h1", "span", StateType, HTMLHeadingElement>["_children"]
-	) {
-		super("h1", s, ...(children as []));
-	}
-}
-
-export class H2<StateType = unknown> extends Zuce<"h2", "span", StateType, HTMLHeadingElement> {
-	constructor(
-		s: S<StateType>,
-		...children: Zuce<"h2", "span", StateType, HTMLHeadingElement>["_children"]
-	) {
-		super("h2", s, ...(children as []));
-	}
-}
-
-export class H3<StateType = unknown> extends Zuce<"h3", "span", StateType, HTMLHeadingElement> {
-	constructor(
-		s: S<StateType>,
-		...children: Zuce<"h3", "span", StateType, HTMLHeadingElement>["_children"]
-	) {
-		super("h3", s, ...(children as []));
-	}
-}
-
-export class H4<StateType = unknown> extends Zuce<"h4", "span", StateType, HTMLHeadingElement> {
-	constructor(
-		s: S<StateType>,
-		...children: Zuce<"h4", "span", StateType, HTMLHeadingElement>["_children"]
-	) {
-		super("h4", s, ...(children as []));
-	}
-}
-
-export class H5<StateType = unknown> extends Zuce<"h5", "span", StateType, HTMLHeadingElement> {
-	constructor(
-		s: S<StateType>,
-		...children: Zuce<"h5", "span", StateType, HTMLHeadingElement>["_children"]
-	) {
-		super("h5", s, ...(children as []));
-	}
-}
-
-export class H6<StateType = unknown> extends Zuce<"h6", "span", StateType, HTMLHeadingElement> {
-	constructor(
-		s: S<StateType>,
-		...children: Zuce<"h6", "span", StateType, HTMLHeadingElement>["_children"]
-	) {
-		super("h6", s, ...(children as []));
-	}
-}
-
-export class IMG extends Zuce<"img", "img", HTMLImageElement> {
-	constructor() {
-		super("img", null);
-	}
-}
-export class INPUT extends Zuce<"input", "input", HTMLInputElement> {
-	constructor() {
-		super("input", null);
-	}
-}
-
-export class P<StateType = unknown> extends Zuce<
-	"p",
-	PhrasingContent,
-	StateType,
-	HTMLParagraphElement
-> {
-	constructor(
-		s: S<StateType>,
-		...children: Zuce<"p", PhrasingContent, StateType, HTMLParagraphElement>["_children"]
-	) {
-		super("p", s, ...(children as []));
-	}
-}
-
-export class SPAN<StateType = unknown> extends Zuce<"span", "span", StateType, HTMLSpanElement> {
-	constructor(
-		s: S<StateType>,
-		...children: Zuce<"span", "span", StateType, HTMLSpanElement>["_children"]
-	) {
-		super("span", s, ...(children as []));
-	}
-}
-
-export class LABEL<StateType = unknown> extends Zuce<
-	"label",
-	"span" | "p" | "input" | "textarea",
-	StateType,
-	HTMLLabelElement
-> {
-	constructor(
-		s: S<StateType>,
-		...children: Zuce<
-			"label",
-			"span" | "p" | "input" | "textarea",
-			StateType,
-			HTMLLabelElement
-		>["_children"]
-	) {
-		super("label", s, ...(children as []));
-	}
-}
-
-export class NAV<StateType = unknown> extends Zuce<"nav", FlowContent, StateType, HTMLElement> {
-	constructor(
-		s: S<StateType>,
-		...children: Zuce<"nav", FlowContent, StateType, HTMLElement>["_children"]
-	) {
-		super("nav", s, ...(children as []));
-	}
-}
-
-export class TABLE<StateType = unknown> extends Zuce<"table", "span", StateType, HTMLTableElement> {
-	constructor(
-		s: S<StateType>,
-		...children: Zuce<"table", "span", StateType, HTMLTableElement>["_children"]
-	) {
-		super("table", s, ...(children as []));
-	}
-}
-
-export class THEAD<StateType = unknown> extends Zuce<
-	"thead",
-	"tr",
-	StateType,
-	HTMLTableSectionElement
-> {
-	constructor(
-		s: S<StateType>,
-		...children: Zuce<"thead", "tr", StateType, HTMLTableSectionElement>["_children"]
-	) {
-		super("thead", s, ...(children as []));
-	}
-}
-
-export class TBODY<StateType = unknown> extends Zuce<
-	"tbody",
-	"tr",
-	StateType,
-	HTMLTableSectionElement
-> {
-	constructor(
-		s: S<StateType>,
-		...children: Zuce<"tbody", "tr", StateType, HTMLTableSectionElement>["_children"]
-	) {
-		super("tbody", s, ...(children as []));
-	}
-}
-
-export class TFOOT<StateType = unknown> extends Zuce<
-	"tfoot",
-	"tr",
-	StateType,
-	HTMLTableSectionElement
-> {
-	constructor(
-		s: S<StateType>,
-		...children: Zuce<"tfoot", "tr", StateType, HTMLTableSectionElement>["_children"]
-	) {
-		super("tfoot", s, ...(children as []));
-	}
-}
-
-export class TH<StateType = unknown> extends Zuce<
-	"th",
-	FlowContent,
-	StateType,
-	HTMLTableCellElement
-> {
-	constructor(
-		s: S<StateType>,
-		...children: Zuce<"th", FlowContent, StateType, HTMLTableCellElement>["_children"]
-	) {
-		super("th", s, ...(children as []));
-	}
-}
-
-export class TD<StateType = unknown> extends Zuce<
-	"td",
-	FlowContent,
-	StateType,
-	HTMLTableCellElement
-> {
-	constructor(
-		s: S<StateType>,
-		...children: Zuce<"td", FlowContent, StateType, HTMLTableCellElement>["_children"]
-	) {
-		super("td", s, ...(children as []));
-	}
-}
-
-export class TR<StateType = unknown> extends Zuce<
-	"tr",
-	"td" | "th",
-	StateType,
-	HTMLTableRowElement
-> {
-	constructor(
-		s: S<StateType>,
-		...children: Zuce<"tr", "td" | "th", StateType, HTMLTableRowElement>["_children"]
-	) {
-		super("tr", s, ...(children as []));
-	}
-}
 
 const {
 	a,
@@ -1284,7 +1266,7 @@ const {
 	th,
 	td,
 	tr,
-} = $(null);
+} = zuce(null);
 
 export {
 	a,
@@ -1393,7 +1375,7 @@ const formatValue = (value: string | number, unit: string) => {
 
 type NodeCallback = (type: "n") => void;
 
-class NodeHook<NodeType> {
+class NodeHook<NodeType extends Node> {
 	private _node: NodeType;
 	private _cb: NodeCallback;
 	constructor(node: NodeType, callback: NodeCallback) {
@@ -1409,7 +1391,7 @@ class NodeHook<NodeType> {
 
 type StateCallback = (type: "n" | "s") => void;
 
-class StateHook<StateType, NodeType> {
+class StateHook<StateType, NodeType extends Node> {
 	private _node: NodeType;
 	private _s: StateType;
 	private _cb: StateCallback;
@@ -1431,8 +1413,8 @@ class StateHook<StateType, NodeType> {
 
 const derive = <T>(cb: () => T) => cb();
 
-export const start = (
-	app: () => InstanceType<typeof Zuce>,
+export const start = <T, Y extends Node>(
+	app: () => { _: Hera<TagName, TagName, T, Y> },
 	config?: {
 		normalize?: CSSStyleDeclaration;
 	},
