@@ -1,4 +1,4 @@
-# ZUCE ⚡
+# ZUCE 🌩️
 
 A library designed for composing reactive user-interfaces
 
