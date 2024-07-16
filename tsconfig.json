@@ -9,7 +9,8 @@
 		"declaration": true,
 		"esModuleInterop": true,
 		"moduleResolution": "node",
-		"strict": false
+		"strict": false,
+		"removeComments": true
 	},
 	"include": ["src"],
 	"exclude": ["node_modules", "build"]
