@@ -1,6 +1,16 @@
-import * as _ from "lodash-es";
 import { nanoid } from "nanoid";
 import type * as CSS from "csstype";
+import {
+	isNumber,
+	throttle,
+	isEmpty,
+	kebabCase,
+	isString,
+	isBoolean,
+	isUndefined,
+	isNull,
+	isFunction,
+} from "./utils";
 
 export type TagName = HTMLTagName | SVGTagName | "text";
 
@@ -477,7 +487,7 @@ export class Hera<
 				this.attributes(value);
 			} else if (this.isEventsUpdate(value, key)) {
 				this.events(value);
-			} else if (this.isRenderUpdate(value, key) && _.isNumber(key)) {
+			} else if (this.isRenderUpdate(value, key) && isNumber(key)) {
 				// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 				this.updateRender(key, value as any);
 			}
@@ -522,7 +532,7 @@ export class Hera<
 	}
 
 	private resize() {
-		return _.throttle(
+		return throttle(
 			() => {
 				if (this) {
 					this.update("NodeFuture");
@@ -585,10 +595,10 @@ export class Hera<
 			return attributes;
 		});
 
-		if (_.isEmpty(derivedAttributes)) return this;
+		if (isEmpty(derivedAttributes)) return this;
 
 		for (const [attribute, value] of Object.entries(derivedAttributes)) {
-			this.node.setAttribute(_.kebabCase(attribute), String(value));
+			this.node.setAttribute(kebabCase(attribute), String(value));
 
 			if (attribute === "class" && this.styleClass) {
 				this.node.classList.add(this.styleClass);
@@ -613,7 +623,7 @@ export class Hera<
 			return events;
 		});
 
-		if (_.isEmpty(derivedEvents)) {
+		if (isEmpty(derivedEvents)) {
 			return this;
 		}
 
@@ -657,7 +667,7 @@ export class Hera<
 			return styles;
 		});
 
-		if (_.isEmpty(derivedStyles)) {
+		if (isEmpty(derivedStyles)) {
 			return this;
 		}
 
@@ -696,11 +706,11 @@ export class Hera<
 		this._children[index] = newNode;
 
 		if (
-			_.isString(newNode) ||
-			_.isNumber(newNode) ||
-			_.isBoolean(newNode) ||
-			_.isUndefined(newNode) ||
-			_.isNull(newNode)
+			isString(newNode) ||
+			isNumber(newNode) ||
+			isBoolean(newNode) ||
+			isUndefined(newNode) ||
+			isNull(newNode)
 		) {
 			if (this.node.childNodes[index]) {
 				this.node.childNodes[index]?.replaceWith(
@@ -732,15 +742,15 @@ export class Hera<
 
 		for (const child of this._children) {
 			const result = derive(() => {
-				if (_.isBoolean(child)) {
+				if (isBoolean(child)) {
 					return;
 				}
 
-				if (_.isString(child) || _.isNumber(child) || _.isNull(child)) {
+				if (isString(child) || isNumber(child) || isNull(child)) {
 					return String(child ?? "");
 				}
 
-				if (_.isFunction(child)) {
+				if (isFunction(child)) {
 				} else if (child._._children?.length) {
 					return child._.render();
 				} else {
@@ -1342,7 +1352,7 @@ const cssSelector = (selector: string, styles: CSSStyleDeclaration) => {
 	return `${selector}{${formatStyles(styles)}}`;
 };
 const cssProperty = (key: string, value: string | number) => {
-	return `${_.kebabCase(key)}:${propertyToUnit(key, value)};`;
+	return `${kebabCase(key)}:${propertyToUnit(key, value)};`;
 };
 
 const propertyToUnit = (key: string, value: string | number) => {

@@ -93,7 +93,6 @@ const config: Config = {
 
 	// A map from regular expressions to module names or to arrays of module names that allow to stub out resources with a single module
 	moduleNameMapper: {
-		"^lodash-es(/(.*)|$)": "lodash",
 		"^nanoid(/(.*)|$)": "nanoid",
 	},
 
